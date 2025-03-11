@@ -3,11 +3,11 @@
   "version": "1.2.3",
   "main": "index.js",
   "scripts": {
-    "test": "jest --runInBand",
+    "test": "jest -i",
     "lint": "standard",
     "ci": "npm run lint && npm run cov",
-    "cov": "jest --cov --runInBand",
-    "covr": "jest --cov --runInBand ",
+    "cov": "jest -i --cov",
+    "covr": "jest --cov ",
     "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done"
   },
   "pre-commit": [
