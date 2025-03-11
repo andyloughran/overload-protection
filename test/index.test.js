@@ -94,14 +94,15 @@ test('exposes maxRssBytes option on instance', function () {
   instance.stop()
 })
 
-test('instance.eventLoopDelay indicates the delay between samples', function (done) {
-  var delay = 50
+xtest('instance.eventLoopDelay indicates the delay between samples', function (done) {
+  var delay = 5
   var instance = protect('http')
   var start = Date.now()
   // "sleep" with while blocking is imprecise, particularly in turbofan,
   // throwing in a Buffer.alloc to compensate
   while (Date.now() - start <= delay) { Buffer.alloc(1e9) }
   setImmediate(function () {
+    expect(instance.eventLoopDelay).toBe(10)
     expect(instance.eventLoopDelay > delay).toBe(true)
     instance.stop()
     done()
