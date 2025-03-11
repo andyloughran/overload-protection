@@ -3,11 +3,11 @@
   "version": "1.2.3",
   "main": "index.js",
   "scripts": {
-    "test": "tap test",
+    "test": "jest --runInBand",
     "lint": "standard",
     "ci": "npm run lint && npm run cov",
-    "cov": "tap --cov test",
-    "covr": "tap --coverage-report=html test",
+    "cov": "jest --cov --runInBand",
+    "covr": "jest --cov --runInBand ",
     "benchmarks": "ls benchmarks | while read l; do node benchmarks/$l; done"
   },
   "pre-commit": [
@@ -37,12 +37,12 @@
   "devDependencies": {
     "autocannon": "^4.4.1",
     "express": "^4.17.1",
+    "jest": "^29.7.0",
     "koa": "^2.11.0",
     "koa-router": "^7.4.0",
     "pre-commit": "^1.2.2",
     "restify": "^8.5.1",
-    "standard": "^10.0.3",
-    "tap": "^10.7.2"
+    "standard": "^10.0.3"
   },
   "dependencies": {
     "loopbench": "^1.2.0"
