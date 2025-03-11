@@ -1,70 +1,65 @@
 'use strict'
-var test = require('tap').test
-var protect = require('../')
+var protect = require('..')
 
-test('throws if framework is unspecified', function (t) {
-  t.throws(function () {
+test('throws if framework is unspecified', function () {
+  expect(function () {
     protect()
-  })
-  t.end()
+  }).toThrow()
 })
 
-test('throws if framework is not supported', function (t) {
-  t.throws(function () {
+test('throws if framework is not supported', function () {
+  expect(function () {
     protect('not a thing')
-  })
-  t.end()
+  }).toThrow()
 })
 
-test('throws if all thresholds are disabled (set to 0)', function (t) {
-  t.throws(function () {
+test('throws if all thresholds are disabled (set to 0)', function () {
+  expect(function () {
     protect('http', {
       eventLoopDelay: 0,
       maxRssBytes: 0,
       maxHeapUsedBytes: 0
     })
-  })
-  t.end()
+  }).toThrow()
 })
 
-test('throws if logStatsOnReq is true but logging is false', function (t) {
-  t.throws(function () {
+test('throws if logStatsOnReq is true but logging is false', function () {
+  expect(function () {
     protect('http', {
       logStatsOnReq: true
     })
-  })
-  t.end()
+  }).toThrow()
 })
 
-test('instance.stop ceases sampling', function (t) {
+test('instance.stop ceases sampling', function (done) {
   var sI = global.setInterval
   var cI = global.clearInterval
   var mock = {unref: function () { return mock }}
   global.setInterval = function () { return mock }
   global.clearInterval = function (ref) {
-    t.is(ref, mock)
+    expect(ref).toBe(mock)
     global.setInterval = sI
     global.clearInterval = cI
-    t.end()
+    done()
   }
   var instance = protect('http')
   instance.stop()
 })
 
-test('sampleInterval option sets the sample rate', function (t) {
+test('sampleInterval option sets the sample rate', function (done) {
   var sI = global.setInterval
   var cI = global.clearInterval
   var sampleRate = 88
   var mock = {unref: function () { return mock }}
   global.setInterval = function (fn, n) {
-    t.is(n, sampleRate)
+    expect(n).toBe(sampleRate)
     return mock
   }
   global.clearInterval = function (ref) {
-    t.is(ref, mock)
+    expect(ref).toBe(mock)
     global.setInterval = sI
     global.clearInterval = cI
-    t.end()
+    done()
   }
   var instance = protect('http', {
     sampleInterval: sampleRate
@@ -72,37 +67,34 @@ test('sampleInterval option sets the sample rate', function (t) {
   instance.stop()
 })
 
-test('exposes maxEventLoopDelay option on instance', function (t) {
+test('exposes maxEventLoopDelay option on instance', function () {
   var value = 9999
   var instance = protect('http', {
     maxEventLoopDelay: value
   })
-  t.is(instance.maxEventLoopDelay, value)
+  expect(instance.maxEventLoopDelay).toBe(value)
   instance.stop()
-  t.end()
 })
 
-test('exposes maxHeapUsedBytes option on instance', function (t) {
+test('exposes maxHeapUsedBytes option on instance', function () {
   var value = 9999
   var instance = protect('http', {
     maxHeapUsedBytes: value
   })
-  t.is(instance.maxHeapUsedBytes, value)
+  expect(instance.maxHeapUsedBytes).toBe(value)
   instance.stop()
-  t.end()
 })
 
-test('exposes maxRssBytes option on instance', function (t) {
+test('exposes maxRssBytes option on instance', function () {
   var value = 9999
   var instance = protect('http', {
     maxRssBytes: value
   })
-  t.is(instance.maxRssBytes, value)
+  expect(instance.maxRssBytes).toBe(value)
   instance.stop()
-  t.end()
 })
 
-test('instance.eventLoopDelay indicates the delay between samples', function (t) {
+test('instance.eventLoopDelay indicates the delay between samples', function (done) {
   var delay = 50
   var instance = protect('http')
   var start = Date.now()
@@ -110,13 +102,13 @@ test('instance.eventLoopDelay indicates the delay between samples', function (t)
   // throwing in a Buffer.alloc to compensate
   while (Date.now() - start <= delay) { Buffer.alloc(1e9) }
   setImmediate(function () {
-    t.is(instance.eventLoopDelay > delay, true)
+    expect(instance.eventLoopDelay > delay).toBe(true)
     instance.stop()
-    t.end()
+    done()
   })
 })
 
-test('instance.eventLoopOverload is true when maxEventLoopDelay threshold is breached', function (t) {
+test('instance.eventLoopOverload is true when maxEventLoopDelay threshold is breached', function (done) {
   var delay = 50
   var instance = protect('http', {
     sampleInterval: 5,
@@ -125,13 +117,13 @@ test('instance.eventLoopOverload is true when maxEventLoopDelay threshold is bre
   var start = Date.now()
   while (Date.now() - start < delay) {}
   setImmediate(function () {
-    t.is(instance.eventLoopOverload, true)
+    expect(instance.eventLoopOverload).toBe(true)
     instance.stop()
-    t.end()
+    done()
   })
 })
 
-test('instance.eventLoopOverload is false when returning under maxEventLoopDelay threshold', function (t) {
+test('instance.eventLoopOverload is false when returning under maxEventLoopDelay threshold', function (done) {
   var delay = 50
   var instance = protect('http', {
     sampleInterval: 5,
@@ -141,14 +133,14 @@ test('instance.eventLoopOverload is false when returning under maxEventLoopDelay
   while (Date.now() - start < delay) {}
   setImmediate(function () {
     setTimeout(function () {
-      t.is(instance.eventLoopOverload, false)
+      expect(instance.eventLoopOverload).toBe(false)
       instance.stop()
-      t.end()
+      done()
     }, 10)
   })
 })
 
-test('instance.eventLoopOverload is always false when maxEventLoopDelay is 0 (maxHeapUsedBytes enabled)', function (t) {
+test('instance.eventLoopOverload is always false when maxEventLoopDelay is 0 (maxHeapUsedBytes enabled)', function (done) {
   var delay = 50
   var instance = protect('http', {
     sampleInterval: 5,
@@ -158,13 +150,13 @@ test('instance.eventLoopOverload is always false when maxEventLoopDelay is 0 (ma
   var start = Date.now()
   while (Date.now() - start < delay) {}
   setImmediate(function () {
-    t.is(instance.eventLoopOverload, false)
+    expect(instance.eventLoopOverload).toBe(false)
     instance.stop()
-    t.end()
+    done()
   })
 })
 
-test('instance.eventLoopOverload is always false when maxEventLoopDelay is 0 (maxRssBytes enabled)', function (t) {
+test('instance.eventLoopOverload is always false when maxEventLoopDelay is 0 (maxRssBytes enabled)', function (done) {
   var delay = 50
   var instance = protect('http', {
     sampleInterval: 5,
@@ -174,13 +166,13 @@ test('instance.eventLoopOverload is always false when maxEventLoopDelay is 0 (ma
   var start = Date.now()
   while (Date.now() - start < delay) {}
   setImmediate(function () {
-    t.is(instance.eventLoopOverload, false)
+    expect(instance.eventLoopOverload).toBe(false)
     instance.stop()
-    t.end()
+    done()
   })
 })
 
-test('instance.overload is true if instance.eventLoopOverload is true', function (t) {
+test('instance.overload is true if instance.eventLoopOverload is true', function (done) {
   var delay = 50
   var instance = protect('http', {
     sampleInterval: 5,
@@ -189,14 +181,14 @@ test('instance.overload is true if instance.eventLoopOverload is true', function
   var start = Date.now()
   while (Date.now() - start < delay) {}
   setImmediate(function () {
-    t.is(instance.eventLoopOverload, true)
-    t.is(instance.overload, instance.eventLoopOverload)
+    expect(instance.eventLoopOverload).toBe(true)
+    expect(instance.overload).toBe(instance.eventLoopOverload)
     instance.stop()
-    t.end()
+    done()
   })
 })
 
-test('instance.heapUsedOverload is true when maxHeapUsedBytes threshold is breached', function (t) {
+test('instance.heapUsedOverload is true when maxHeapUsedBytes threshold is breached', function (done) {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -211,14 +203,14 @@ test('instance.heapUsedOverload is true when maxHeapUsedBytes threshold is breac
     maxHeapUsedBytes: 10
   })
   setTimeout(function () {
-    t.is(instance.heapUsedOverload, true)
+    expect(instance.heapUsedOverload).toBe(true)
     process.memoryUsage = memoryUsage
     instance.stop()
-    t.end()
+    done()
   }, 6)
 })
 
-test('instance.heapUsedOverload is false when returning under maxHeapUsedBytes threshold', function (t) {
+test('instance.heapUsedOverload is false when returning under maxHeapUsedBytes threshold', function (done) {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -242,15 +234,15 @@ test('instance.heapUsedOverload is false when returning under maxHeapUsedBytes t
       }
     }
     setTimeout(function () {
-      t.is(instance.heapUsedOverload, false)
+      expect(instance.heapUsedOverload).toBe(false)
       process.memoryUsage = memoryUsage
       instance.stop()
-      t.end()
+      done()
     }, 6)
   }, 6)
 })
 
-test('instance.heapUsedOverload is always false when maxHeapUsedBytes is 0', function (t) {
+test('instance.heapUsedOverload is always false when maxHeapUsedBytes is 0', function (done) {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -265,14 +257,14 @@ test('instance.heapUsedOverload is always false when maxHeapUsedBytes is 0', fun
     maxHeapUsedBytes: 0
   })
   setTimeout(function () {
-    t.is(instance.heapUsedOverload, false)
+    expect(instance.heapUsedOverload).toBe(false)
     process.memoryUsage = memoryUsage
     instance.stop()
-    t.end()
+    done()
   }, 6)
 })
 
-test('instance.overload is true if instance.heapUsedOverload is true', function (t) {
+test('instance.overload is true if instance.heapUsedOverload is true', function (done) {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -287,15 +279,15 @@ test('instance.overload is true if instance.heapUsedOverload is true', function 
     maxHeapUsedBytes: 10
   })
   setTimeout(function () {
-    t.is(instance.heapUsedOverload, true)
-    t.is(instance.overload, instance.heapUsedOverload)
+    expect(instance.heapUsedOverload).toBe(true)
+    expect(instance.overload).toBe(instance.heapUsedOverload)
     instance.stop()
     process.memoryUsage = memoryUsage
-    t.end()
+    done()
   }, 6)
 })
 
-test('instance.rssOverload is true when maxRssBytes threshold is breached', function (t) {
+test('instance.rssOverload is true when maxRssBytes threshold is breached', function (done) {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -310,14 +302,14 @@ test('instance.rssOverload is true when maxRssBytes threshold is breached', func
     maxRssBytes: 10
   })
   setTimeout(function () {
-    t.is(instance.rssOverload, true)
+    expect(instance.rssOverload).toBe(true)
     process.memoryUsage = memoryUsage
     instance.stop()
-    t.end()
+    done()
   }, 6)
 })
 
-test('instance.rssOverload is false when returning under maxRssBytes threshold', function (t) {
+test('instance.rssOverload is false when returning under maxRssBytes threshold', function (done) {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -341,15 +333,15 @@ test('instance.rssOverload is false when returning under maxRssBytes threshold',
       }
     }
     setTimeout(function () {
-      t.is(instance.rssOverload, false)
+      expect(instance.rssOverload).toBe(false)
       instance.stop()
       process.memoryUsage = memoryUsage
-      t.end()
+      done()
     }, 6)
   }, 6)
 })
 
-test('instance.rssOverload is always false when maxRssBytes is 0', function (t) {
+test('instance.rssOverload is always false when maxRssBytes is 0', function (done) {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -364,14 +356,14 @@ test('instance.rssOverload is always false when maxRssBytes is 0', function (t) 
     maxRssBytes: 0
   })
   setTimeout(function () {
-    t.is(instance.rssOverload, false)
+    expect(instance.rssOverload).toBe(false)
     instance.stop()
     process.memoryUsage = memoryUsage
-    t.end()
+    done()
   }, 6)
 })
 
-test('instance.overload is true if instance.rssOverload is true', function (t) {
+test('instance.overload is true if instance.rssOverload is true', function (done) {
   var memoryUsage = process.memoryUsage
   process.memoryUsage = function () {
     return {
@@ -386,35 +378,33 @@ test('instance.overload is true if instance.rssOverload is true', function (t) {
     maxRssBytes: 10
   })
   setTimeout(function () {
-    t.is(instance.rssOverload, true)
-    t.is(instance.overload, instance.rssOverload)
+    expect(instance.rssOverload).toBe(true)
+    expect(instance.overload).toBe(instance.rssOverload)
     instance.stop()
     process.memoryUsage = memoryUsage
-    t.end()
+    done()
   }, 6)
 })
 
 if (Object.setPrototypeOf) {
-  test('Supports legacy JS (__proto__)', function (t) {
+  test('Supports legacy JS (__proto__)', function () {
     var setPrototypeOf = Object.setPrototypeOf
     delete Object.setPrototypeOf
     var instance = protect('http')
     // overload wouldn't be in instance if __proto__ wasn't set
-    t.is('overload' in instance, true)
-    t.end()
+    expect('overload' in instance).toBe(true)
     Object.setPrototypeOf = setPrototypeOf
   })
 }
 
 if (!Object.setPrototypeOf) {
-  test('Supports modern/future JS (Object.setPrototypeOf)', function (t) {
+  test('Supports modern/future JS (Object.setPrototypeOf)', function () {
     Object.setPrototypeOf = function (o, proto) {
       o.__proto__ = proto // eslint-disable-line
     }
     var instance = protect('http')
     // overload wouldn't be in instance if __proto__ wasn't set
-    t.is('overload' in instance, true)
-    t.end()
+    expect('overload' in instance).toBe(true)
     delete Object.setPrototypeOf
   })
 }
