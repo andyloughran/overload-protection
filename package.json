@@ -47,6 +47,9 @@
   "dependencies": {
     "loopbench": "^1.2.0"
   },
+  "standard": {
+    "env": [ "jest" ]
+  },
   "directories": {
     "lib": "lib",
     "test": "test"

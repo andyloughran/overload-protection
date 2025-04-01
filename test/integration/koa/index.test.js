@@ -1,7 +1,7 @@
 'use strict'
 var http = require('http')
 var Koa = require('koa')
-var Router = require('koa-router')
+// var Router = require('koa-router')
 var protection = require('../../..')
 
 function block (n) {
